@@ -1,12 +1,12 @@
 hid_trossen
 ===========
 
-a simple service which listens on a hid device and generates motion vectors for Trossen Bots like the Phantom AX
+a simple service which listens on a hid device and generates motion vectors for Trossen Bots like the [Phantom AX](http://www.trossenrobotics.com/phantomx-ax-hexapod.aspx).
 
 Requirements
 ======================
 The service connects to a dynamixel_zmq instance via ZeroMQ/MessagePack and sends "Commander" requests. So you'll need 
-erazor83/dynamixel_zmq with Trossen-Commander enabled (WITH_TROSSEN).
+[erazor83/dynamixel_zmq](https://github.com/erazor83/dynamixel_zmq) with Trossen-Commander enabled (WITH_TROSSEN).
 
 
 ...a typical session
@@ -35,6 +35,8 @@ You'll need:
   * net-libs/zeromq
   * net-libs/cppzmq
   * dev-libs/msgpack
+
+Normally you should already have these since dynamixel_zmq requires them too.
 
 <pre>
 git clone https://github.com/erazor83/hid_trossen
