@@ -1,8 +1,8 @@
 /**
  * hid-Trossen tool0
  * __author__		= Alexander Krause <alexander.krause@ed-solutions.de>
- * __version__	= 0.0.1
- * __date__			= 2013-09-17
+ * __version__	= 0.1.0
+ * __date__			= 2013-10-26
  */
 
 #include <unistd.h>
@@ -136,6 +136,9 @@ int main(int argc, char** argv) {
 	fcntl(hid_fd, F_SETFL, O_NONBLOCK);
 
 	int16_t js_values[20];
+	for (int i=0; i<20;i++) {
+		js_values[i]=0;
+	}
 	int16_t input_timer=0;
 	tx_vect[0]=TROSSEN_COMMANDER;
 
