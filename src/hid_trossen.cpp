@@ -137,6 +137,8 @@ int main(int argc, char** argv) {
 
 	int16_t js_values[20];
 	int16_t input_timer=0;
+	tx_vect[0]=TROSSEN_COMMANDER;
+
 #define INPUT_TIMEOUT	100
 	while (1) {
 
@@ -167,7 +169,7 @@ int main(int argc, char** argv) {
 			tx_vect[2]=127+(js_values[HID_EVENT_NO_LEFT_X]/255);
 			tx_vect[3]=127-(js_values[HID_EVENT_NO_RIGHT_Y]/255);
 			tx_vect[4]=127+(js_values[HID_EVENT_NO_RIGHT_X]/255);
-			for (uint8_t i=0;i<4;i++) {
+			for (uint8_t i=1;i<4;i++) {
 				if (tx_vect[i]<0) {
 					tx_vect[i]=0;
 				}
