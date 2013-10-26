@@ -1,0 +1,5 @@
+#cmakedefine ENABLE_PYPOSE_COMMANDS      @ENABLE_PYPOSE_COMMANDS@
+
+#cmakedefine ENABLE_TROSSEN_COMMANDER    @ENABLE_TROSSEN_COMMANDER@
+
+#define VERSION                          "@VERSION@"
