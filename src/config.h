@@ -2,4 +2,4 @@
 
 /* #undef ENABLE_TROSSEN_COMMANDER */
 
-#define VERSION                          "0.0.1"
+#define VERSION                          "1.0.0"

@@ -24,7 +24,31 @@
 #define DESCRIPTION "hid_trossen - Remote Controll Trossen bots via hid device"
 
 #define 	TROSSEN_COMMANDER		0x200
+#define		BUTTON_L4						(1<<0)
+#define		BUTTON_L5						(1<<1)
+#define		BUTTON_L6						(1<<2)
 
+#define		BUTTON_R3						(1<<3)
+#define		BUTTON_R2						(1<<4)
+#define		BUTTON_R1						(1<<5)
+
+#define		BUTTON_LT						(1<<6)
+#define		BUTTON_RT						(1<<7)
+
+//13 -RT lower
+//12 -LT lower
+#define		HID_BUTTON_RT				15
+#define		HID_BUTTON_R1				17
+#define		HID_BUTTON_R2				16
+#define		HID_BUTTON_R3				19
+
+#define		HID_BUTTON_L4				9
+#define		HID_BUTTON_L5				8
+#define		HID_BUTTON_L6				11
+#define		HID_BUTTON_LT				14
+
+#define		HID_BUTTON_ON_VALUE	5000
+#define		INPUT_TIMEOUT				100
 
 /* hid stuff */
 #include <sys/ioctl.h>
@@ -50,6 +74,19 @@ namespace {
 	const size_t ERROR_IN_COMMAND_LINE = 1; 
 	const size_t SUCCESS = 0; 
 	const size_t ERROR_UNHANDLED_EXCEPTION = 2; 
+
+
+	const uint8_t hid_button_map[8][2]={
+		{HID_BUTTON_L4,BUTTON_L4},
+		{HID_BUTTON_L5,BUTTON_L5},
+		{HID_BUTTON_L6,BUTTON_L6},
+		{HID_BUTTON_R3,BUTTON_R3},
+		{HID_BUTTON_R2,BUTTON_R2},
+		{HID_BUTTON_R1,BUTTON_R1},
+		{HID_BUTTON_LT,BUTTON_LT},
+		{HID_BUTTON_RT,BUTTON_RT}
+	};
+
 }
 
 
@@ -142,21 +179,27 @@ int main(int argc, char** argv) {
 	int16_t input_timer=0;
 	tx_vect[0]=TROSSEN_COMMANDER;
 
-#define INPUT_TIMEOUT	100
 	while (1) {
 
 		while (read(hid_fd, &js, sizeof(struct js_event)) == sizeof(struct js_event))  {
 			input_timer=0;
 			if (js.type==2) {
 				js_values[js.number]=js.value;
-				/*
-				if (js.number==HID_EVENT_NO_LEFT_Y) {
-					printf("Event: type %d, time %d, number %d, value %d\n",
-					js.type, js.time, js.number, js.value);
-					
-				}
-				*/
 			}
+#if 0
+				if (js.number>6) {
+				printf(
+					"Event: type %d, time %d, number %d, value %d\n",
+					js.type, js.time, js.number, js.value
+				);
+			}
+			if (js.number==HID_BUTTON_RT) {
+				printf(
+					"Event: type %d, time %d, number %d, value %d\n",
+					js.type, js.time, js.number, js.value
+				);
+			}
+#endif
 		}
 
 		if (input_timer>INPUT_TIMEOUT) {
@@ -168,11 +211,22 @@ int main(int argc, char** argv) {
 			tx_vect[5]=0;
 		} else {
 			input_timer++;
-			tx_vect[1]=127-(js_values[HID_EVENT_NO_LEFT_Y]/255);
-			tx_vect[2]=127+(js_values[HID_EVENT_NO_LEFT_X]/255);
-			tx_vect[3]=127-(js_values[HID_EVENT_NO_RIGHT_Y]/255);
-			tx_vect[4]=127+(js_values[HID_EVENT_NO_RIGHT_X]/255);
-			for (uint8_t i=1;i<4;i++) {
+			tx_vect[1]=127-(js_values[HID_EVENT_NO_LEFT_Y]/250);
+			tx_vect[2]=127+(js_values[HID_EVENT_NO_LEFT_X]/250);
+			tx_vect[3]=127-(js_values[HID_EVENT_NO_RIGHT_Y]/250);
+			tx_vect[4]=127+(js_values[HID_EVENT_NO_RIGHT_X]/250);
+			tx_vect[5]=0;
+
+			for (uint8_t i=0;i<8;i++) {
+				if (js_values[hid_button_map[i][0]]>HID_BUTTON_ON_VALUE) {
+					tx_vect[5]|=hid_button_map[i][1];
+				}
+			}
+			/*
+			if (js_values[hid_button_map[0][0]]>HID_BUTTON_ON_VALUE) {
+				tx_vect[5]|=BUTTON_RT;
+			}*/
+			for (uint8_t i=1;i<5;i++) {
 				if (tx_vect[i]<0) {
 					tx_vect[i]=0;
 				}
