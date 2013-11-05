@@ -106,8 +106,8 @@ int main(int argc, char** argv) {
 		("help", "produce help message")
 		("uri", po::value< std::string >( &zmq_uri ),					"ZeroMQ server uri | default: tcp://*:5555" )
 		("dev", po::value< std::string >( &hid_device ),			"hid device        | default: /dev/hid1 ")
+		("interval", po::value< unsigned int >( &interval ),	"interval in ms    | default: 30 ")
 		("check", "retry until hid can be opened")
-		("interval", po::value< unsigned int >( &interval ),			"interval in ms    | default: 30 ")
 		("debug", "print out debugging info")
 	;
 
