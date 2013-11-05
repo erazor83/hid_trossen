@@ -94,7 +94,9 @@ int main(int argc, char** argv) {
 	// === program parameters ===
 	std::string zmq_uri="tcp://*:5555";
 	std::string hid_device="/dev/hid1";
+	unsigned int interval=30;
 	bool debug=false;
+	bool hid_check=false;
 
 	namespace po = boost::program_options;
 
@@ -104,6 +106,8 @@ int main(int argc, char** argv) {
 		("help", "produce help message")
 		("uri", po::value< std::string >( &zmq_uri ),					"ZeroMQ server uri | default: tcp://*:5555" )
 		("dev", po::value< std::string >( &hid_device ),			"hid device        | default: /dev/hid1 ")
+		("check", "retry until hid can be opened")
+		("interval", po::value< unsigned int >( &interval ),			"interval in ms    | default: 30 ")
 		("debug", "print out debugging info")
 	;
 
@@ -124,6 +128,9 @@ int main(int argc, char** argv) {
 		if (vm.count("debug")) {
 			debug=true;
 		}
+		if (vm.count("check")) {
+			hid_check=true;
+		}
 	} catch(po::error& e) {
 		std::cerr << "ERROR: " << e.what() << std::endl << std::endl; 
 		std::cerr << desc << std::endl; 
@@ -140,16 +147,28 @@ int main(int argc, char** argv) {
 	socket.connect (zmq_uri.c_str());
 	
 	std::vector<int> tx_vect(6,0);
+	std::vector<int> otx_vect(6,0);
 	tx_vect[0]=TROSSEN_COMMANDER;
+	otx_vect[0]=TROSSEN_COMMANDER;
 	
 	int hid_fd;
 	/* Open the Device with non-blocking reads. In real life,
 	   don't use a hard coded path; use libudev instead. */
-	hid_fd = open(hid_device.c_str(), O_RDWR);
 
-	if (hid_fd < 0) {
-		std::cerr << "ERROR: unable to open hid device"  << std::endl << std::endl; 
-		return 1;
+	while (true) {
+		hid_fd = open(hid_device.c_str(), O_RDWR);
+
+		if (hid_fd < 0) {
+			if (hid_check) {
+				 std::cout << "Unable to open hid device. Retrying in 1s..." << std::endl;
+				 sleep(1);
+			} else {
+				std::cerr << "ERROR: unable to open hid device"  << std::endl << std::endl; 
+				return 1;
+			}
+		} else {
+			break;
+		}
 	}
 	
 	
@@ -246,18 +265,27 @@ int main(int argc, char** argv) {
 				tx_vect[1],tx_vect[2],tx_vect[3],tx_vect[4],tx_vect[5]
 			);
 		}
-		usleep(33*1000);
-
-		msgpack::sbuffer tx_msg;
-		/* send vector via zmq*/
-		zmq::message_t rx_zmq;
+		usleep(interval*1000);
 		
-		msgpack::pack(&tx_msg, tx_vect);
-		zmq::message_t tx_zmq(tx_msg.size());
+		bool update_required=false;
+		for (uint8_t i=1;i<5;i++) {
+			if (otx_vect[i]!=tx_vect[i]) {
+				otx_vect[i]=tx_vect[i];
+				update_required=true;
+			}
+		}
+		if (update_required) {
+			msgpack::sbuffer tx_msg;
+			/* send vector via zmq*/
+			zmq::message_t rx_zmq;
 		
-		memcpy(static_cast<char*>(tx_zmq.data()), tx_msg.data(), tx_msg.size());
-		socket.send(tx_zmq);
-		socket.recv (&rx_zmq);
+			msgpack::pack(&tx_msg, tx_vect);
+			zmq::message_t tx_zmq(tx_msg.size());
+		
+			memcpy(static_cast<char*>(tx_zmq.data()), tx_msg.data(), tx_msg.size());
+			socket.send(tx_zmq);
+			socket.recv (&rx_zmq);
+		}
 
 	}	
 	close(hid_fd);
