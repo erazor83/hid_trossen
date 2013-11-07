@@ -97,7 +97,8 @@ int main(int argc, char** argv) {
 	unsigned int interval=30;
 	bool debug=false;
 	bool hid_check=false;
-
+	bool no_action=false;
+	
 	namespace po = boost::program_options;
 
   // Setup options.
@@ -109,6 +110,7 @@ int main(int argc, char** argv) {
 		("interval", po::value< unsigned int >( &interval ),	"interval in ms    | default: 30 ")
 		("check", "retry until hid can be opened")
 		("debug", "print out debugging info")
+		("no-action", "don't send ZeroMQ stuff")
 	;
 
   po::variables_map vm;
@@ -130,6 +132,9 @@ int main(int argc, char** argv) {
 		}
 		if (vm.count("check")) {
 			hid_check=true;
+		}
+		if (vm.count("no-action")) {
+			no_action=true;
 		}
 	} catch(po::error& e) {
 		std::cerr << "ERROR: " << e.what() << std::endl << std::endl; 
@@ -222,11 +227,11 @@ int main(int argc, char** argv) {
 		}
 
 		if (input_timer>INPUT_TIMEOUT) {
-			printf("Input Timeout reached!");
-			tx_vect[1]=127;
-			tx_vect[2]=127;
-			tx_vect[3]=127;
-			tx_vect[4]=127;
+			printf("Input Timeout reached!\n");
+			tx_vect[1]=128;
+			tx_vect[2]=128;
+			tx_vect[3]=128;
+			tx_vect[4]=128;
 			tx_vect[5]=0;
 		} else {
 			input_timer++;
@@ -268,23 +273,27 @@ int main(int argc, char** argv) {
 		usleep(interval*1000);
 		
 		bool update_required=false;
-		for (uint8_t i=1;i<5;i++) {
+		for (uint8_t i=1;i<6;i++) {
 			if (otx_vect[i]!=tx_vect[i]) {
 				otx_vect[i]=tx_vect[i];
 				update_required=true;
 			}
 		}
 		if (update_required) {
-			msgpack::sbuffer tx_msg;
-			/* send vector via zmq*/
-			zmq::message_t rx_zmq;
-		
-			msgpack::pack(&tx_msg, tx_vect);
-			zmq::message_t tx_zmq(tx_msg.size());
-		
-			memcpy(static_cast<char*>(tx_zmq.data()), tx_msg.data(), tx_msg.size());
-			socket.send(tx_zmq);
-			socket.recv (&rx_zmq);
+			if (! no_action) {
+				msgpack::sbuffer tx_msg;
+				/* send vector via zmq*/
+				zmq::message_t rx_zmq;
+			
+				msgpack::pack(&tx_msg, tx_vect);
+				zmq::message_t tx_zmq(tx_msg.size());
+			
+				memcpy(static_cast<char*>(tx_zmq.data()), tx_msg.data(), tx_msg.size());
+				socket.send(tx_zmq);
+				socket.recv (&rx_zmq);
+			} else {
+				printf("ZeroMQ - TX\n");
+			}
 		}
 
 	}	
